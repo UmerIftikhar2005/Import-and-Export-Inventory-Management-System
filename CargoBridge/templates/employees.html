@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employees — CargoBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .status-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:0.65rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;padding:3px 9px;border-radius:var(--radius-sm);border:1px solid transparent;white-space:nowrap;}
+    .status-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;}
+    .s-active{background:rgba(200,240,96,0.1);color:var(--accent);border-color:rgba(200,240,96,0.25);}
+    .s-inactive{background:rgba(240,80,96,0.1);color:var(--danger);border-color:rgba(240,80,96,0.25);}
+    .s-on-leave{background:rgba(240,168,48,0.1);color:var(--warning);border-color:rgba(240,168,48,0.25);}
+    .emp-avatar{width:34px;height:34px;border-radius:var(--radius-sm);background:var(--bg-raised);border:1px solid var(--border-mid);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:0.68rem;font-weight:500;color:var(--accent);flex-shrink:0;}
+    .emp-cell{display:flex;align-items:center;gap:10px;}
+    .emp-name{font-weight:500;color:var(--text-primary);font-size:0.88rem;}
+    .emp-username{font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);}
+    .confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;}
+    .confirm-overlay.open{display:flex;}
+    .confirm-box{background:var(--bg-panel);border:1px solid var(--border-mid);border-radius:var(--radius-lg);padding:2rem;width:380px;animation:fadeUp 0.2s ease both;}
+    .confirm-box h4{font-family:var(--font-display);font-size:1.1rem;font-weight:700;letter-spacing:0.05em;margin-bottom:0.5rem;}
+    .confirm-box p{font-size:0.85rem;color:var(--text-muted);margin-bottom:1.5rem;}
+    .warn-note{font-size:0.8rem;color:var(--danger);margin-bottom:1.5rem;padding:0.6rem 0.8rem;border:1px solid rgba(240,80,96,0.25);border-radius:var(--radius-md);background:rgba(240,80,96,0.06);}
+    .confirm-actions{display:flex;gap:10px;}
+    .empty-state{text-align:center;padding:3.5rem 2rem;}
+    .empty-state p{font-family:var(--font-mono);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-top:1rem;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  {% from 'base_sidebar.html' import sidebar %}{{ sidebar('employees') }}
+
+  <div class="main-content">
+    <div class="topbar">
+      <span class="topbar-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="vertical-align:-2px;margin-right:8px;color:var(--accent)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Employees
+        <span style="font-family:var(--font-mono);font-size:0.62rem;padding:2px 8px;border-radius:var(--radius-sm);background:var(--accent-glow);border:1px solid rgba(200,240,96,0.2);color:var(--accent);margin-left:8px;letter-spacing:0.08em;vertical-align:middle;">Admin Only</span>
+      </span>
+      <div class="topbar-actions">
+        <form method="GET" action="{{ url_for('employees') }}">
+          <div class="search-bar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--text-muted);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" name="q" value="{{ search }}" placeholder="Search employees...">
+          </div>
+        </form>
+        <a href="{{ url_for('add_employee') }}" class="btn btn-primary btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          Add Employee
+        </a>
+      </div>
+    </div>
+
+    <div class="page-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for category, message in messages %}
+          <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
+        {% endfor %}{% endif %}
+      {% endwith %}
+
+      <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-bottom:1.4rem;">
+        <div class="stat-card"><div class="stat-label">Total Staff</div><div class="stat-value">{{ data|length }}</div></div>
+        <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value" style="color:var(--accent)">{{ data|selectattr('status','equalto','active')|list|length }}</div></div>
+        <div class="stat-card"><div class="stat-label">On Leave</div><div class="stat-value" style="color:var(--warning)">{{ data|selectattr('status','equalto','on-leave')|list|length }}</div></div>
+      </div>
+
+      <div class="card" style="padding:0;">
+        <div class="card-header" style="padding:1rem 1.4rem;">
+          <span class="card-title">All Employees</span>
+          {% if search %}<span style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);">Results for "{{ search }}" — <a href="{{ url_for('employees') }}" style="color:var(--accent);">clear</a></span>{% endif %}
+        </div>
+        <div class="table-wrap" style="border:none;border-radius:0;">
+          {% if data %}
+          <table>
+            <thead>
+              <tr><th>Employee</th><th>Emp ID</th><th>Department</th><th>Designation</th><th>Phone</th><th>Salary</th><th>Join Date</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              {% for item in data %}
+              <tr>
+                <td>
+                  <div class="emp-cell">
+                    <div class="emp-avatar">{{ item.full_name[:2].upper() if item.full_name else 'EM' }}</div>
+                    <div>
+                      <div class="emp-name">{{ item.full_name }}</div>
+                      <div class="emp-username">@{{ item.username }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td><span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--accent)">{{ item.emp_id }}</span></td>
+                <td>
+                  <span style="font-size:0.8rem;padding:2px 8px;border-radius:var(--radius-sm);background:var(--bg-raised);border:1px solid var(--border-dim);color:var(--text-secondary);">{{ item.department }}</span>
+                </td>
+                <td style="font-size:0.84rem;color:var(--text-secondary)">{{ item.designation }}</td>
+                <td><span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text-muted)">{{ item.phone or '—' }}</span></td>
+                <td><span style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text-primary)">PKR {{ '{:,.0f}'.format(item.salary) if item.salary else '—' }}</span></td>
+                <td><span style="font-family:var(--font-mono);font-size:0.73rem;color:var(--text-muted)">{{ item.join_date.strftime('%d %b %Y') if item.join_date else '—' }}</span></td>
+                <td>
+                  {% set s = item.status|lower|replace(' ','-') %}
+                  <span class="status-badge s-{{ s }}">{{ item.status }}</span>
+                </td>
+                <td>
+                  <div class="table-actions">
+                    <a href="{{ url_for('edit_employee', id=item._id) }}" class="btn btn-ghost btn-sm">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      Edit
+                    </a>
+                    <button class="btn btn-danger btn-sm" onclick="confirmDelete('{{ item._id }}','{{ item.full_name }}','{{ item.username }}')">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" style="opacity:0.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <p>{% if search %}No employees match "{{ search }}"{% else %}No employees yet — add the first one{% endif %}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h4>Delete Employee?</h4>
+    <p id="confirmMsg">This will permanently remove the employee record.</p>
+    <div class="warn-note" id="warnNote"></div>
+    <div class="confirm-actions">
+      <form method="POST" id="deleteForm" style="flex:1;">
+        <button type="submit" class="btn btn-danger" style="width:100%;justify-content:center;padding:0.6rem 1rem;font-size:0.82rem;">Yes, delete both</button>
+      </form>
+      <button class="btn btn-ghost" onclick="closeConfirm()" style="flex:1;">Cancel</button>
+    </div>
+  </div>
+</div>
+<script>
+  function confirmDelete(id,name,username){
+    document.getElementById('confirmMsg').textContent='"'+name+'" will be permanently removed.';
+    document.getElementById('warnNote').textContent='This also deletes the login account "@'+username+'". They will no longer be able to log in.';
+    document.getElementById('deleteForm').action='/employees/delete/'+id;
+    document.getElementById('confirmOverlay').classList.add('open');
+  }
+  function closeConfirm(){document.getElementById('confirmOverlay').classList.remove('open');}
+  document.getElementById('confirmOverlay').addEventListener('click',function(e){if(e.target===this)closeConfirm();});
+</script>
+</body>
+</html>

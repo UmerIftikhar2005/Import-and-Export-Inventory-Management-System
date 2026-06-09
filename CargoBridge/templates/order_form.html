@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ 'Edit' if action=='edit' else 'Add' }} Order — CargoBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .form-card{background:var(--bg-panel);border:1px solid var(--border-dim);border-radius:var(--radius-lg);overflow:hidden;max-width:900px;}
+    .form-card-header{padding:1.2rem 1.6rem;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;gap:12px;background:var(--bg-raised);}
+    .form-card-header h3{font-family:var(--font-display);font-size:1.15rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;}
+    .form-card-body{padding:1.6rem;}
+    .form-section-label{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.9rem;margin-top:1.4rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border-dim);}
+    .form-section-label:first-child{margin-top:0;}
+    .form-row{display:grid;gap:1rem;margin-bottom:1rem;}
+    .form-row.cols-2{grid-template-columns:1fr 1fr;}
+    .form-row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+    .form-row.cols-1{grid-template-columns:1fr;}
+    .form-group{display:flex;flex-direction:column;}
+    .form-group label{font-family:var(--font-display);font-size:0.73rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:5px;}
+    .form-group input,.form-group select{height:40px;padding:0 12px;font-size:0.9rem;}
+    .form-actions{display:flex;align-items:center;gap:10px;padding:1.2rem 1.6rem;border-top:1px solid var(--border-dim);background:var(--bg-raised);}
+    .id-badge{font-family:var(--font-mono);font-size:0.68rem;padding:3px 8px;border-radius:var(--radius-sm);background:var(--accent-glow);border:1px solid rgba(200,240,96,0.2);color:var(--accent);letter-spacing:0.06em;}
+
+    /* Line items */
+    .items-table{width:100%;border-collapse:collapse;margin-bottom:0.8rem;}
+    .items-table th{font-family:var(--font-display);font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);padding:0.5rem 0.6rem;text-align:left;border-bottom:1px solid var(--border-dim);}
+    .items-table td{padding:0.4rem 0.5rem;vertical-align:middle;}
+    .items-table input,.items-table select{height:34px;padding:0 8px;font-size:0.85rem;}
+    .remove-row-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;transition:color 0.15s;}
+    .remove-row-btn:hover{color:var(--danger);}
+    .add-item-btn{font-family:var(--font-display);font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;padding:0.4rem 1rem;border-radius:var(--radius-md);border:1px dashed var(--border-mid);background:transparent;color:var(--text-muted);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.18s;}
+    .add-item-btn:hover{border-color:var(--accent);color:var(--accent);}
+    .total-row{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid var(--border-dim);}
+    .total-label{font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);}
+    .total-value{font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--accent);}
+    @media(max-width:700px){.form-row.cols-2,.form-row.cols-3{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  {% from 'base_sidebar.html' import sidebar %}{{ sidebar('orders') }}
+
+  <div class="main-content">
+    <div class="topbar">
+      <span class="topbar-title">
+        <a href="{{ url_for('orders') }}" style="color:var(--text-muted);font-size:0.9rem;font-weight:400;letter-spacing:normal;text-transform:none;">Orders</a>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin:0 6px;vertical-align:-1px;color:var(--border-lit)"><polyline points="9 18 15 12 9 6"/></svg>
+        {{ 'Edit Order' if action=='edit' else 'New Order' }}
+      </span>
+      {% if action=='edit' and order %}<span class="id-badge">{{ order.order_id }}</span>{% endif %}
+    </div>
+
+    <div class="page-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for category, message in messages %}
+          <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
+        {% endfor %}{% endif %}
+      {% endwith %}
+
+      <div class="form-card">
+        <div class="form-card-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <h3>{{ 'Edit Order' if action=='edit' else 'New Order' }}</h3>
+        </div>
+
+        <form method="POST" action="{{ url_for('edit_order', id=order._id) if action=='edit' else url_for('add_order') }}" id="orderForm">
+          <div class="form-card-body">
+
+            <div class="form-section-label">Order Info</div>
+            <div class="form-row cols-3">
+              <div class="form-group">
+                <label>Order ID <span style="color:var(--danger)">*</span></label>
+                <input type="text" name="order_id" placeholder="e.g. ORD-004" value="{{ order.order_id if order else '' }}" required>
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select name="status">
+                  {% for s in ['pending','confirmed','completed','cancelled'] %}
+                  <option value="{{ s }}" {{ 'selected' if order and order.status==s else '' }}>{{ s|capitalize }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Order Date</label>
+                <input type="date" name="order_date" value="{{ order.order_date.strftime('%Y-%m-%d') if order and order.order_date else '' }}">
+              </div>
+            </div>
+
+            <div class="form-section-label">Client</div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label>Client Name <span style="color:var(--danger)">*</span></label>
+                <input type="text" name="client_name" placeholder="e.g. Dubai Medical Supplies LLC" value="{{ order.client_name if order else '' }}" required>
+              </div>
+              <div class="form-group">
+                <label>Client Email</label>
+                <input type="email" name="client_email" placeholder="e.g. buyer@client.com" value="{{ order.client_email if order else '' }}">
+              </div>
+            </div>
+
+            <div class="form-section-label">Shipment Reference</div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label>Shipment</label>
+                <select name="shipment_ref">
+                  <option value="">— None —</option>
+                  {% for s in shipments %}
+                  <option value="{{ s.shipment_id }}" {{ 'selected' if order and order.shipment_ref==s.shipment_id else '' }}>{{ s.shipment_id }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Currency</label>
+                <select name="currency">
+                  {% for c in ['USD','GBP','EUR','PKR','AED'] %}
+                  <option value="{{ c }}" {{ 'selected' if order and order.currency==c else '' }}>{{ c }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <!-- Line items -->
+            <div class="form-section-label">Order Items</div>
+            <table class="items-table" id="itemsTable">
+              <thead>
+                <tr>
+                  <th style="width:35%">Product ID</th>
+                  <th style="width:20%">Qty</th>
+                  <th style="width:25%">Unit Price</th>
+                  <th style="width:15%">Subtotal</th>
+                  <th style="width:5%"></th>
+                </tr>
+              </thead>
+              <tbody id="itemsBody">
+                {% if order and order.items %}
+                  {% for it in order.items %}
+                  <tr class="item-row">
+                    <td>
+                      <select name="item_product_id" class="pid-select" onchange="updateRow(this)">
+                        <option value="">— Select —</option>
+                        {% for p in products %}
+                        <option value="{{ p.product_id }}" data-price="{{ p.unit_price }}" {{ 'selected' if p.product_id==it.product_id else '' }}>{{ p.product_id }} — {{ p.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </td>
+                    <td><input type="number" name="item_qty" class="item-qty" min="1" value="{{ it.qty }}" oninput="calcRow(this)"></td>
+                    <td><input type="number" name="item_unit_price" class="item-price" min="0" step="0.01" value="{{ it.unit_price }}" oninput="calcRow(this)"></td>
+                    <td><span class="row-subtotal" style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text-primary)">${{ '%.2f'|format(it.qty * it.unit_price) }}</span></td>
+                    <td><button type="button" class="remove-row-btn" onclick="removeRow(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                <tr class="item-row">
+                  <td>
+                    <select name="item_product_id" class="pid-select" onchange="updateRow(this)">
+                      <option value="">— Select product —</option>
+                      {% for p in products %}
+                      <option value="{{ p.product_id }}" data-price="{{ p.unit_price }}">{{ p.product_id }} — {{ p.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                  <td><input type="number" name="item_qty" class="item-qty" min="1" value="1" oninput="calcRow(this)"></td>
+                  <td><input type="number" name="item_unit_price" class="item-price" min="0" step="0.01" value="0" oninput="calcRow(this)"></td>
+                  <td><span class="row-subtotal" style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text-primary)">$0.00</span></td>
+                  <td><button type="button" class="remove-row-btn" onclick="removeRow(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+            <button type="button" class="add-item-btn" onclick="addRow()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Item
+            </button>
+            <div class="total-row">
+              <span class="total-label">Order Total</span>
+              <span class="total-value" id="grandTotal">$0.00</span>
+              <input type="hidden" name="total_amount" id="totalInput" value="{{ order.total_amount if order else 0 }}">
+            </div>
+
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              {{ 'Save Changes' if action=='edit' else 'Add Order' }}
+            </button>
+            <a href="{{ url_for('orders') }}" class="btn btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const productOptions = `{% for p in products %}<option value="{{ p.product_id }}" data-price="{{ p.unit_price }}">{{ p.product_id }} — {{ p.name }}</option>{% endfor %}`;
+
+  function addRow() {
+    const tbody = document.getElementById('itemsBody');
+    const tr = document.createElement('tr');
+    tr.className = 'item-row';
+    tr.innerHTML = `
+      <td><select name="item_product_id" class="pid-select" onchange="updateRow(this)">
+        <option value="">— Select product —</option>${productOptions}
+      </select></td>
+      <td><input type="number" name="item_qty" class="item-qty" min="1" value="1" oninput="calcRow(this)"></td>
+      <td><input type="number" name="item_unit_price" class="item-price" min="0" step="0.01" value="0" oninput="calcRow(this)"></td>
+      <td><span class="row-subtotal" style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text-primary)">$0.00</span></td>
+      <td><button type="button" class="remove-row-btn" onclick="removeRow(this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button></td>`;
+    tbody.appendChild(tr);
+  }
+
+  function removeRow(btn) {
+    const rows = document.querySelectorAll('.item-row');
+    if (rows.length > 1) { btn.closest('tr').remove(); recalcTotal(); }
+  }
+
+  function updateRow(sel) {
+    const opt = sel.selectedOptions[0];
+    const price = parseFloat(opt.dataset.price || 0);
+    const row = sel.closest('tr');
+    row.querySelector('.item-price').value = price.toFixed(2);
+    calcRow(row.querySelector('.item-qty'));
+  }
+
+  function calcRow(input) {
+    const row = input.closest('tr');
+    const qty   = parseFloat(row.querySelector('.item-qty').value) || 0;
+    const price = parseFloat(row.querySelector('.item-price').value) || 0;
+    row.querySelector('.row-subtotal').textContent = '$' + (qty * price).toFixed(2);
+    recalcTotal();
+  }
+
+  function recalcTotal() {
+    let total = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+      const qty   = parseFloat(row.querySelector('.item-qty').value) || 0;
+      const price = parseFloat(row.querySelector('.item-price').value) || 0;
+      total += qty * price;
+    });
+    document.getElementById('grandTotal').textContent = '$' + total.toFixed(2);
+    document.getElementById('totalInput').value = total.toFixed(2);
+  }
+
+  recalcTotal();
+</script>
+</body>
+</html>

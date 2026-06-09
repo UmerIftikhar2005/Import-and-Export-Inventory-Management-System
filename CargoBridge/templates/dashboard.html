@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — CargoBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .welcome-bar {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-lg);
+      padding: 1.4rem 1.8rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .welcome-bar::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      opacity: 0.6;
+    }
+    .welcome-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--text-primary);
+    }
+    .welcome-title span { color: var(--accent); }
+    .welcome-sub {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+    .role-tag {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      padding: 4px 12px;
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    .role-admin    { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(200,240,96,0.25); }
+    .role-employee { background: rgba(96,184,240,0.1); color: var(--info); border: 1px solid rgba(96,184,240,0.25); }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.9rem;
+    }
+
+    .quick-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 1.8rem;
+    }
+    .quick-link {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-lg);
+      padding: 1.1rem 1.2rem;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.18s;
+      color: var(--text-secondary);
+    }
+    .quick-link:hover {
+      background: var(--bg-raised);
+      border-color: var(--border-lit);
+      color: var(--text-primary);
+      transform: translateY(-1px);
+    }
+    .quick-link-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-md);
+      background: var(--bg-raised);
+      border: 1px solid var(--border-mid);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      color: var(--accent);
+    }
+    .quick-link-label {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: inherit;
+    }
+    .quick-link-count {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+
+    .mini-table table { font-size: 0.83rem; }
+    .mini-table thead th { font-size: 0.65rem; padding: 0.6rem 0.9rem; }
+    .mini-table tbody td { padding: 0.6rem 0.9rem; }
+
+    .status-dot {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: var(--font-mono); font-size: 0.65rem;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .status-dot::before {
+      content: ''; width: 5px; height: 5px;
+      border-radius: 50%; background: currentColor; flex-shrink: 0;
+    }
+    .s-pending    { color: var(--warning); }
+    .s-in-transit { color: var(--info); }
+    .s-delivered  { color: var(--accent); }
+    .s-cancelled  { color: var(--danger); }
+    .s-confirmed  { color: var(--accent); }
+    .s-completed  { color: var(--success, #50d090); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate { animation: fadeUp 0.4s ease both; }
+    .delay-1 { animation-delay: 0.05s; }
+    .delay-2 { animation-delay: 0.1s; }
+    .delay-3 { animation-delay: 0.15s; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+
+  {% from 'base_sidebar.html' import sidebar %}
+  {{ sidebar('dashboard') }}
+
+  <div class="main-content">
+    <div class="topbar">
+      <span class="topbar-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="vertical-align:-2px;margin-right:8px;color:var(--accent)"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </span>
+      <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);letter-spacing:0.08em;">
+        {{ now().strftime('%d %b %Y') if now is defined else '' }}
+      </span>
+    </div>
+
+    <div class="page-body">
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for category, message in messages %}
+          <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
+        {% endfor %}{% endif %}
+      {% endwith %}
+
+      <!-- Welcome bar -->
+      <div class="welcome-bar animate">
+        <div>
+          <div class="welcome-title">Welcome back, <span>{{ session.full_name.split()[0] if session.full_name else session.user }}</span></div>
+          <div class="welcome-sub">CargoBridge · Import &amp; Export Management System</div>
+        </div>
+        <span class="role-tag role-{{ session.role }}">{{ session.role }}</span>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="section-title animate delay-1">Overview</div>
+      <div class="stats-grid animate delay-1">
+        <div class="stat-card">
+          <div class="stat-label">Shipments</div>
+          <div class="stat-value">{{ stats.shipments }}</div>
+          <div class="stat-sub"><a href="{{ url_for('shipments') }}" style="color:var(--accent);font-size:0.72rem;">View all →</a></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Products</div>
+          <div class="stat-value">{{ stats.products }}</div>
+          <div class="stat-sub"><a href="{{ url_for('products') }}" style="color:var(--accent);font-size:0.72rem;">View all →</a></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Orders</div>
+          <div class="stat-value">{{ stats.orders }}</div>
+          <div class="stat-sub"><a href="{{ url_for('orders') }}" style="color:var(--accent);font-size:0.72rem;">View all →</a></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Transactions</div>
+          <div class="stat-value">{{ stats.transactions }}</div>
+          <div class="stat-sub"><a href="{{ url_for('transactions') }}" style="color:var(--accent);font-size:0.72rem;">View all →</a></div>
+        </div>
+        {% if session.role == 'admin' and stats.employees is defined %}
+        <div class="stat-card">
+          <div class="stat-label">Employees</div>
+          <div class="stat-value">{{ stats.employees }}</div>
+          <div class="stat-sub"><a href="{{ url_for('employees') }}" style="color:var(--accent);font-size:0.72rem;">View all →</a></div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Quick action links -->
+      <div class="section-title animate delay-2">Quick actions</div>
+      <div class="quick-links animate delay-2">
+        <a href="{{ url_for('add_shipment') }}" class="quick-link">
+          <div class="quick-link-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+          <div><div class="quick-link-label">Add Shipment</div><div class="quick-link-count">New cargo entry</div></div>
+        </a>
+        <a href="{{ url_for('add_product') }}" class="quick-link">
+          <div class="quick-link-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+          <div><div class="quick-link-label">Add Product</div><div class="quick-link-count">New product entry</div></div>
+        </a>
+        <a href="{{ url_for('add_order') }}" class="quick-link">
+          <div class="quick-link-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div><div class="quick-link-label">Add Order</div><div class="quick-link-count">New client order</div></div>
+        </a>
+        <a href="{{ url_for('add_transaction') }}" class="quick-link">
+          <div class="quick-link-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div><div class="quick-link-label">Add Transaction</div><div class="quick-link-count">New payment record</div></div>
+        </a>
+        {% if session.role == 'admin' %}
+        <a href="{{ url_for('add_employee') }}" class="quick-link">
+          <div class="quick-link-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          </div>
+          <div><div class="quick-link-label">Add Employee</div><div class="quick-link-count">New staff member</div></div>
+        </a>
+        {% endif %}
+      </div>
+
+      <!-- Recent data tables -->
+      <div class="two-col animate delay-3">
+
+        <!-- Recent Shipments -->
+        <div class="card" style="padding:0;">
+          <div class="card-header" style="padding:1rem 1.2rem;">
+            <span class="card-title">Recent Shipments</span>
+            <a href="{{ url_for('shipments') }}" class="btn btn-ghost btn-sm">View all</a>
+          </div>
+          <div class="table-wrap mini-table" style="border:none;border-radius:0;">
+            {% if recent_shipments %}
+            <table>
+              <thead><tr><th>ID</th><th>Route</th><th>Status</th></tr></thead>
+              <tbody>
+                {% for s in recent_shipments %}
+                <tr>
+                  <td><span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--accent)">{{ s.shipment_id }}</span></td>
+                  <td style="font-size:0.8rem;">{{ s.origin }} → {{ s.destination }}</td>
+                  <td>
+                    {% set st = s.status | lower | replace(' ','-') %}
+                    <span class="status-dot s-{{ st }}">{{ s.status }}</span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <div style="padding:1.5rem;text-align:center;font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);">No shipments yet</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="card" style="padding:0;">
+          <div class="card-header" style="padding:1rem 1.2rem;">
+            <span class="card-title">Recent Orders</span>
+            <a href="{{ url_for('orders') }}" class="btn btn-ghost btn-sm">View all</a>
+          </div>
+          <div class="table-wrap mini-table" style="border:none;border-radius:0;">
+            {% if recent_orders %}
+            <table>
+              <thead><tr><th>ID</th><th>Client</th><th>Status</th></tr></thead>
+              <tbody>
+                {% for o in recent_orders %}
+                <tr>
+                  <td><span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--accent)">{{ o.order_id }}</span></td>
+                  <td style="font-size:0.8rem;">{{ o.client_name }}</td>
+                  <td>
+                    {% set st = o.status | lower | replace(' ','-') %}
+                    <span class="status-dot s-{{ st }}">{{ o.status }}</span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <div style="padding:1.5rem;text-align:center;font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);">No orders yet</div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ 'Edit' if action == 'edit' else 'Add' }} Shipment — CargoBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .form-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      max-width: 860px;
+    }
+
+    .form-card-header {
+      padding: 1.2rem 1.6rem;
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-raised);
+    }
+
+    .form-card-header h3 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+    }
+
+    .form-card-body { padding: 1.6rem; }
+
+    .form-section-label {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.9rem;
+      margin-top: 1.4rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border-dim);
+    }
+    .form-section-label:first-child { margin-top: 0; }
+
+    .form-row {
+      display: grid;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+    .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-row.cols-1 { grid-template-columns: 1fr; }
+
+    .form-group { display: flex; flex-direction: column; }
+
+    .form-group label {
+      font-family: var(--font-display);
+      font-size: 0.73rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      height: 40px;
+      padding: 0 12px;
+      font-size: 0.9rem;
+    }
+
+    .form-group textarea {
+      height: auto;
+      padding: 10px 12px;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .field-hint {
+      font-family: var(--font-mono);
+      font-size: 0.64rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      letter-spacing: 0.04em;
+    }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 1.2rem 1.6rem;
+      border-top: 1px solid var(--border-dim);
+      background: var(--bg-raised);
+    }
+
+    .id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-glow);
+      border: 1px solid rgba(200,240,96,0.2);
+      color: var(--accent);
+      letter-spacing: 0.06em;
+    }
+
+    @media (max-width: 700px) {
+      .form-row.cols-2,
+      .form-row.cols-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-text">CARGO<span>BRIDGE</span></div>
+      <div class="logo-sub">Logistics Management</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="{{ url_for('dashboard') }}" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+
+      <div class="nav-section-label">Operations</div>
+      <a href="{{ url_for('shipments') }}" class="nav-item active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>
+        Shipments
+      </a>
+      <a href="{{ url_for('products') }}" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        Products
+      </a>
+      <a href="{{ url_for('orders') }}" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Orders
+      </a>
+      <a href="{{ url_for('transactions') }}" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Transactions
+      </a>
+
+      {% if session.role == 'admin' %}
+      <div class="nav-section-label">Admin</div>
+      <a href="{{ url_for('employees') }}" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Employees
+      </a>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-badge">
+        <div class="user-avatar">{{ session.full_name[:2].upper() if session.full_name else 'U' }}</div>
+        <div>
+          <div class="user-name">{{ session.full_name or session.user }}</div>
+          <div class="user-role">{{ session.role }}</div>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <span class="topbar-title">
+        <a href="{{ url_for('shipments') }}" style="color:var(--text-muted);font-size:0.9rem;font-weight:400;letter-spacing:normal;text-transform:none;">Shipments</a>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin:0 6px;vertical-align:-1px;color:var(--border-lit)"><polyline points="9 18 15 12 9 6"/></svg>
+        {{ 'Edit Shipment' if action == 'edit' else 'New Shipment' }}
+      </span>
+      {% if action == 'edit' and shipment %}
+        <span class="id-badge">{{ shipment.shipment_id }}</span>
+      {% endif %}
+    </div>
+
+    <!-- Page body -->
+    <div class="page-body">
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <div class="form-card">
+
+        <div class="form-card-header">
+          {% if action == 'edit' %}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <h3>Edit Shipment</h3>
+          {% else %}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <h3>New Shipment</h3>
+          {% endif %}
+        </div>
+
+        <!-- FORM -->
+        <form
+          method="POST"
+          action="{{ url_for('edit_shipment', id=shipment._id) if action == 'edit' else url_for('add_shipment') }}"
+          id="shipmentForm"
+        >
+
+          <div class="form-card-body">
+
+            <!-- Section 1: Identification -->
+            <div class="form-section-label">Identification</div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label for="shipment_id">Shipment ID <span style="color:var(--danger)">*</span></label>
+                <input
+                  type="text"
+                  id="shipment_id"
+                  name="shipment_id"
+                  placeholder="e.g. SHP-004"
+                  value="{{ shipment.shipment_id if shipment else '' }}"
+                  required
+                >
+              </div>
+              <div class="form-group">
+                <label for="type">Type <span style="color:var(--danger)">*</span></label>
+                <select id="type" name="type" required>
+                  <option value="export" {{ 'selected' if shipment and shipment.type == 'export' else '' }}>Export</option>
+                  <option value="import" {{ 'selected' if shipment and shipment.type == 'import' else '' }}>Import</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Section 2: Route -->
+            <div class="form-section-label">Route</div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label for="origin">Origin <span style="color:var(--danger)">*</span></label>
+                <input
+                  type="text"
+                  id="origin"
+                  name="origin"
+                  placeholder="e.g. Karachi"
+                  value="{{ shipment.origin if shipment else '' }}"
+                  required
+                >
+              </div>
+              <div class="form-group">
+                <label for="destination">Destination <span style="color:var(--danger)">*</span></label>
+                <input
+                  type="text"
+                  id="destination"
+                  name="destination"
+                  placeholder="e.g. Dubai, UAE"
+                  value="{{ shipment.destination if shipment else '' }}"
+                  required
+                >
+              </div>
+            </div>
+
+            <!-- Section 3: Logistics -->
+            <div class="form-section-label">Logistics</div>
+            <div class="form-row cols-3">
+              <div class="form-group">
+                <label for="carrier">Carrier</label>
+                <input
+                  type="text"
+                  id="carrier"
+                  name="carrier"
+                  placeholder="e.g. Pakistan National Shipping"
+                  value="{{ shipment.carrier if shipment else '' }}"
+                >
+              </div>
+              <div class="form-group">
+                <label for="weight_kg">Weight (kg)</label>
+                <input
+                  type="number"
+                  id="weight_kg"
+                  name="weight_kg"
+                  placeholder="0"
+                  min="0"
+                  step="0.1"
+                  value="{{ shipment.weight_kg if shipment else '' }}"
+                >
+              </div>
+              <div class="form-group">
+                <label for="status">Status <span style="color:var(--danger)">*</span></label>
+                <select id="status" name="status" required>
+                  <option value="pending"    {{ 'selected' if shipment and shipment.status == 'pending'    else '' }}>Pending</option>
+                  <option value="in-transit" {{ 'selected' if shipment and shipment.status == 'in-transit' else '' }}>In-Transit</option>
+                  <option value="delivered"  {{ 'selected' if shipment and shipment.status == 'delivered'  else '' }}>Delivered</option>
+                  <option value="cancelled"  {{ 'selected' if shipment and shipment.status == 'cancelled'  else '' }}>Cancelled</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Section 4: Dates -->
+            <div class="form-section-label">Schedule</div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label for="departure">Departure Date</label>
+                <input
+                  type="date"
+                  id="departure"
+                  name="departure"
+                  value="{{ shipment.departure.strftime('%Y-%m-%d') if shipment and shipment.departure else '' }}"
+                >
+              </div>
+              <div class="form-group">
+                <label for="eta">ETA (Estimated Arrival)</label>
+                <input
+                  type="date"
+                  id="eta"
+                  name="eta"
+                  value="{{ shipment.eta.strftime('%Y-%m-%d') if shipment and shipment.eta else '' }}"
+                >
+              </div>
+            </div>
+
+            <!-- Section 5: Cargo items -->
+            <div class="form-section-label">Cargo Items</div>
+            <div class="form-row cols-1">
+              <div class="form-group">
+                <label for="cargo_items">Product IDs</label>
+                <input
+                  type="text"
+                  id="cargo_items"
+                  name="cargo_items"
+                  placeholder="PRD-001, PRD-002, PRD-003"
+                  value="{{ shipment.cargo_items | join(', ') if shipment and shipment.cargo_items else '' }}"
+                >
+                <span class="field-hint">Comma-separated product IDs (e.g. PRD-001, PRD-002)</span>
+              </div>
+            </div>
+
+          </div><!-- /form-card-body -->
+
+          <!-- Actions -->
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              {% if action == 'edit' %}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Save Changes
+              {% else %}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Shipment
+              {% endif %}
+            </button>
+            <a href="{{ url_for('shipments') }}" class="btn btn-ghost">Cancel</a>
+          </div>
+
+        </form>
+      </div><!-- /form-card -->
+
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<script>
+  /* Date validation — ETA must be after departure */
+  document.getElementById('shipmentForm').addEventListener('submit', function(e) {
+    const dep = document.getElementById('departure').value;
+    const eta = document.getElementById('eta').value;
+    if (dep && eta && eta < dep) {
+      e.preventDefault();
+      alert('ETA cannot be before the departure date.');
+    }
+  });
+</script>
+
+</body>
+</html>

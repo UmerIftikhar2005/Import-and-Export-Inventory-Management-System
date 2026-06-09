@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ 'Edit' if action=='edit' else 'Add' }} Transaction — CargoBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .form-card{background:var(--bg-panel);border:1px solid var(--border-dim);border-radius:var(--radius-lg);overflow:hidden;max-width:820px;}
+    .form-card-header{padding:1.2rem 1.6rem;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;gap:12px;background:var(--bg-raised);}
+    .form-card-header h3{font-family:var(--font-display);font-size:1.15rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;}
+    .form-card-body{padding:1.6rem;}
+    .form-section-label{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.9rem;margin-top:1.4rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border-dim);}
+    .form-section-label:first-child{margin-top:0;}
+    .form-row{display:grid;gap:1rem;margin-bottom:1rem;}
+    .form-row.cols-2{grid-template-columns:1fr 1fr;}
+    .form-row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+    .form-row.cols-1{grid-template-columns:1fr;}
+    .form-group{display:flex;flex-direction:column;}
+    .form-group label{font-family:var(--font-display);font-size:0.73rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:5px;}
+    .form-group input,.form-group select{height:40px;padding:0 12px;font-size:0.9rem;}
+    .form-actions{display:flex;align-items:center;gap:10px;padding:1.2rem 1.6rem;border-top:1px solid var(--border-dim);background:var(--bg-raised);}
+    .id-badge{font-family:var(--font-mono);font-size:0.68rem;padding:3px 8px;border-radius:var(--radius-sm);background:var(--accent-glow);border:1px solid rgba(200,240,96,0.2);color:var(--accent);letter-spacing:0.06em;}
+    @media(max-width:700px){.form-row.cols-2,.form-row.cols-3{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  {% from 'base_sidebar.html' import sidebar %}{{ sidebar('transactions') }}
+
+  <div class="main-content">
+    <div class="topbar">
+      <span class="topbar-title">
+        <a href="{{ url_for('transactions') }}" style="color:var(--text-muted);font-size:0.9rem;font-weight:400;letter-spacing:normal;text-transform:none;">Transactions</a>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin:0 6px;vertical-align:-1px;color:var(--border-lit)"><polyline points="9 18 15 12 9 6"/></svg>
+        {{ 'Edit Transaction' if action=='edit' else 'New Transaction' }}
+      </span>
+      {% if action=='edit' and txn %}<span class="id-badge">{{ txn.txn_id }}</span>{% endif %}
+    </div>
+
+    <div class="page-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for category, message in messages %}
+          <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
+        {% endfor %}{% endif %}
+      {% endwith %}
+
+      <div class="form-card">
+        <div class="form-card-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <h3>{{ 'Edit Transaction' if action=='edit' else 'New Transaction' }}</h3>
+        </div>
+
+        <form method="POST" action="{{ url_for('edit_transaction', id=txn._id) if action=='edit' else url_for('add_transaction') }}">
+          <div class="form-card-body">
+
+            <div class="form-section-label">Transaction Info</div>
+            <div class="form-row cols-3">
+              <div class="form-group">
+                <label>Transaction ID <span style="color:var(--danger)">*</span></label>
+                <input type="text" name="txn_id" placeholder="e.g. TXN-004" value="{{ txn.txn_id if txn else '' }}" required>
+              </div>
+              <div class="form-group">
+                <label>Type</label>
+                <select name="type">
+                  {% for t in ['payment','advance','refund'] %}
+                  <option value="{{ t }}" {{ 'selected' if txn and txn.type==t else '' }}>{{ t|capitalize }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select name="status">
+                  {% for s in ['pending','completed','failed'] %}
+                  <option value="{{ s }}" {{ 'selected' if txn and txn.status==s else '' }}>{{ s|capitalize }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="form-section-label">Order Reference</div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label>Order</label>
+                <select name="order_ref">
+                  <option value="">— None —</option>
+                  {% for o in orders %}
+                  <option value="{{ o.order_id }}" {{ 'selected' if txn and txn.order_ref==o.order_id else '' }}>{{ o.order_id }}{% if o.client_name %} — {{ o.client_name }}{% endif %}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Paid By <span style="color:var(--danger)">*</span></label>
+                <input type="text" name="paid_by" placeholder="e.g. Dubai Medical Supplies LLC" value="{{ txn.paid_by if txn else '' }}" required>
+              </div>
+            </div>
+
+            <div class="form-section-label">Payment Details</div>
+            <div class="form-row cols-3">
+              <div class="form-group">
+                <label>Amount <span style="color:var(--danger)">*</span></label>
+                <input type="number" name="amount" placeholder="0.00" min="0" step="0.01" value="{{ txn.amount if txn else '' }}" required>
+              </div>
+              <div class="form-group">
+                <label>Currency</label>
+                <select name="currency">
+                  {% for c in ['USD','GBP','EUR','PKR','AED'] %}
+                  <option value="{{ c }}" {{ 'selected' if txn and txn.currency==c else '' }}>{{ c }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Transaction Date</label>
+                <input type="date" name="txn_date" value="{{ txn.txn_date.strftime('%Y-%m-%d') if txn and txn.txn_date else '' }}">
+              </div>
+            </div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label>Payment Method</label>
+                <select name="method">
+                  {% for m in ['bank_transfer','wire_transfer','letter_of_credit','cash'] %}
+                  <option value="{{ m }}" {{ 'selected' if txn and txn.method==m else '' }}>{{ m|replace('_',' ')|title }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Bank / Reference No.</label>
+                <input type="text" name="bank_ref" placeholder="e.g. SWIFT-AE204930" value="{{ txn.bank_ref if txn else '' }}">
+              </div>
+            </div>
+
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              {{ 'Save Changes' if action=='edit' else 'Add Transaction' }}
+            </button>
+            <a href="{{ url_for('transactions') }}" class="btn btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

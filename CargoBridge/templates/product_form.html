@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ 'Edit' if action=='edit' else 'Add' }} Product — CargoBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .form-card{background:var(--bg-panel);border:1px solid var(--border-dim);border-radius:var(--radius-lg);overflow:hidden;max-width:820px;}
+    .form-card-header{padding:1.2rem 1.6rem;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;gap:12px;background:var(--bg-raised);}
+    .form-card-header h3{font-family:var(--font-display);font-size:1.15rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;}
+    .form-card-body{padding:1.6rem;}
+    .form-section-label{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.9rem;margin-top:1.4rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border-dim);}
+    .form-section-label:first-child{margin-top:0;}
+    .form-row{display:grid;gap:1rem;margin-bottom:1rem;}
+    .form-row.cols-2{grid-template-columns:1fr 1fr;}
+    .form-row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+    .form-row.cols-1{grid-template-columns:1fr;}
+    .form-group{display:flex;flex-direction:column;}
+    .form-group label{font-family:var(--font-display);font-size:0.73rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:5px;}
+    .form-group input,.form-group select{height:40px;padding:0 12px;font-size:0.9rem;}
+    .field-hint{font-family:var(--font-mono);font-size:0.63rem;color:var(--text-muted);margin-top:4px;letter-spacing:0.04em;}
+    .form-actions{display:flex;align-items:center;gap:10px;padding:1.2rem 1.6rem;border-top:1px solid var(--border-dim);background:var(--bg-raised);}
+    .id-badge{font-family:var(--font-mono);font-size:0.68rem;padding:3px 8px;border-radius:var(--radius-sm);background:var(--accent-glow);border:1px solid rgba(200,240,96,0.2);color:var(--accent);letter-spacing:0.06em;}
+    @media(max-width:700px){.form-row.cols-2,.form-row.cols-3{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  {% from 'base_sidebar.html' import sidebar %}{{ sidebar('products') }}
+
+  <div class="main-content">
+    <div class="topbar">
+      <span class="topbar-title">
+        <a href="{{ url_for('products') }}" style="color:var(--text-muted);font-size:0.9rem;font-weight:400;letter-spacing:normal;text-transform:none;">Products</a>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin:0 6px;vertical-align:-1px;color:var(--border-lit)"><polyline points="9 18 15 12 9 6"/></svg>
+        {{ 'Edit Product' if action=='edit' else 'New Product' }}
+      </span>
+      {% if action=='edit' and product %}<span class="id-badge">{{ product.product_id }}</span>{% endif %}
+    </div>
+
+    <div class="page-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for category, message in messages %}
+          <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
+        {% endfor %}{% endif %}
+      {% endwith %}
+
+      <div class="form-card">
+        <div class="form-card-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          <h3>{{ 'Edit Product' if action=='edit' else 'New Product' }}</h3>
+        </div>
+
+        <form method="POST" action="{{ url_for('edit_product', id=product._id) if action=='edit' else url_for('add_product') }}">
+          <div class="form-card-body">
+
+            <div class="form-section-label">Identification</div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label>Product ID <span style="color:var(--danger)">*</span></label>
+                <input type="text" name="product_id" placeholder="e.g. PRD-006" value="{{ product.product_id if product else '' }}" required>
+              </div>
+              <div class="form-group">
+                <label>Category <span style="color:var(--danger)">*</span></label>
+                <input type="text" name="category" placeholder="e.g. Agriculture, Textiles" value="{{ product.category if product else '' }}" required>
+              </div>
+            </div>
+
+            <div class="form-section-label">Product Details</div>
+            <div class="form-row cols-1">
+              <div class="form-group">
+                <label>Product Name <span style="color:var(--danger)">*</span></label>
+                <input type="text" name="name" placeholder="e.g. Basmati Rice (25kg bag)" value="{{ product.name if product else '' }}" required>
+              </div>
+            </div>
+            <div class="form-row cols-3">
+              <div class="form-group">
+                <label>Unit</label>
+                <select name="unit">
+                  {% for u in ['bag','carton','piece','tonne','kg','unit','box','pallet'] %}
+                  <option value="{{ u }}" {{ 'selected' if product and product.unit==u else '' }}>{{ u }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Unit Price (USD) <span style="color:var(--danger)">*</span></label>
+                <input type="number" name="unit_price" placeholder="0.00" min="0" step="0.01" value="{{ product.unit_price if product else '' }}" required>
+              </div>
+              <div class="form-group">
+                <label>Stock Quantity</label>
+                <input type="number" name="stock_qty" placeholder="0" min="0" value="{{ product.stock_qty if product else '' }}">
+              </div>
+            </div>
+
+            <div class="form-section-label">Origin &amp; Classification</div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label>Origin Country</label>
+                <input type="text" name="origin_country" placeholder="e.g. Pakistan" value="{{ product.origin_country if product else '' }}">
+              </div>
+              <div class="form-group">
+                <label>HS Code</label>
+                <input type="text" name="hs_code" placeholder="e.g. 1006.30" value="{{ product.hs_code if product else '' }}">
+                <span class="field-hint">Harmonized System customs classification code</span>
+              </div>
+            </div>
+
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              {{ 'Save Changes' if action=='edit' else 'Add Product' }}
+            </button>
+            <a href="{{ url_for('products') }}" class="btn btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

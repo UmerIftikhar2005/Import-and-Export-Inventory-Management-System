@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ 'Edit' if action=='edit' else 'Add' }} Employee — CargoBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .form-card{background:var(--bg-panel);border:1px solid var(--border-dim);border-radius:var(--radius-lg);overflow:hidden;max-width:820px;}
+    .form-card-header{padding:1.2rem 1.6rem;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;gap:12px;background:var(--bg-raised);}
+    .form-card-header h3{font-family:var(--font-display);font-size:1.15rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;}
+    .form-card-body{padding:1.6rem;}
+    .form-section-label{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.9rem;margin-top:1.4rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border-dim);}
+    .form-section-label:first-child{margin-top:0;}
+    .form-row{display:grid;gap:1rem;margin-bottom:1rem;}
+    .form-row.cols-2{grid-template-columns:1fr 1fr;}
+    .form-row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+    .form-row.cols-1{grid-template-columns:1fr;}
+    .form-group{display:flex;flex-direction:column;}
+    .form-group label{font-family:var(--font-display);font-size:0.73rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:5px;}
+    .form-group input,.form-group select{height:40px;padding:0 12px;font-size:0.9rem;}
+    .field-hint{font-family:var(--font-mono);font-size:0.63rem;color:var(--text-muted);margin-top:4px;letter-spacing:0.04em;}
+    .form-actions{display:flex;align-items:center;gap:10px;padding:1.2rem 1.6rem;border-top:1px solid var(--border-dim);background:var(--bg-raised);}
+    .id-badge{font-family:var(--font-mono);font-size:0.68rem;padding:3px 8px;border-radius:var(--radius-sm);background:var(--accent-glow);border:1px solid rgba(200,240,96,0.2);color:var(--accent);letter-spacing:0.06em;}
+    .info-box{padding:0.8rem 1rem;border-radius:var(--radius-md);border:1px solid rgba(96,184,240,0.25);background:rgba(96,184,240,0.06);color:var(--info);font-size:0.82rem;margin-bottom:1rem;}
+    @media(max-width:700px){.form-row.cols-2,.form-row.cols-3{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  {% from 'base_sidebar.html' import sidebar %}{{ sidebar('employees') }}
+
+  <div class="main-content">
+    <div class="topbar">
+      <span class="topbar-title">
+        <a href="{{ url_for('employees') }}" style="color:var(--text-muted);font-size:0.9rem;font-weight:400;letter-spacing:normal;text-transform:none;">Employees</a>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin:0 6px;vertical-align:-1px;color:var(--border-lit)"><polyline points="9 18 15 12 9 6"/></svg>
+        {{ 'Edit Employee' if action=='edit' else 'New Employee' }}
+      </span>
+      {% if action=='edit' and employee %}<span class="id-badge">{{ employee.emp_id }}</span>{% endif %}
+    </div>
+
+    <div class="page-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for category, message in messages %}
+          <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
+        {% endfor %}{% endif %}
+      {% endwith %}
+
+      <div class="form-card">
+        <div class="form-card-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <h3>{{ 'Edit Employee' if action=='edit' else 'New Employee' }}</h3>
+        </div>
+
+        <form method="POST" action="{{ url_for('edit_employee', id=employee._id) if action=='edit' else url_for('add_employee') }}">
+          <div class="form-card-body">
+
+            {% if action == 'add' %}
+            <div class="info-box">
+              Adding an employee automatically creates a login account. Set their username and password below — they will use these to sign in.
+            </div>
+            {% endif %}
+
+            <div class="form-section-label">Personal Info</div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label>Full Name <span style="color:var(--danger)">*</span></label>
+                <input type="text" name="full_name" placeholder="e.g. Ali Hassan" value="{{ employee.full_name if employee else '' }}" required>
+              </div>
+              <div class="form-group">
+                <label>Employee ID <span style="color:var(--danger)">*</span></label>
+                <input type="text" name="emp_id" placeholder="e.g. EMP-005" value="{{ employee.emp_id if employee else '' }}" required>
+              </div>
+            </div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" placeholder="e.g. ali@cargobridge.pk" value="{{ employee.email if employee else '' }}">
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="text" name="phone" placeholder="e.g. 0300-1234567" value="{{ employee.phone if employee else '' }}">
+              </div>
+            </div>
+
+            <div class="form-section-label">Job Details</div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label>Department <span style="color:var(--danger)">*</span></label>
+                <select name="department">
+                  {% for d in ['Logistics','Finance','Operations','Customs','HR','Management','IT'] %}
+                  <option value="{{ d }}" {{ 'selected' if employee and employee.department==d else '' }}>{{ d }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Designation <span style="color:var(--danger)">*</span></label>
+                <input type="text" name="designation" placeholder="e.g. Shipment Coordinator" value="{{ employee.designation if employee else '' }}" required>
+              </div>
+            </div>
+            <div class="form-row cols-3">
+              <div class="form-group">
+                <label>Salary (PKR)</label>
+                <input type="number" name="salary" placeholder="0" min="0" value="{{ employee.salary if employee else '' }}">
+              </div>
+              <div class="form-group">
+                <label>Join Date</label>
+                <input type="date" name="join_date" value="{{ employee.join_date.strftime('%Y-%m-%d') if employee and employee.join_date else '' }}">
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select name="status">
+                  {% for s in ['active','inactive','on-leave'] %}
+                  <option value="{{ s }}" {{ 'selected' if employee and employee.status==s else '' }}>{{ s|replace('-',' ')|title }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            {% if action == 'add' %}
+            <div class="form-section-label">Login Account</div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label>Username <span style="color:var(--danger)">*</span></label>
+                <input type="text" name="username" placeholder="e.g. emp_ali" required>
+                <span class="field-hint">Used to log in — must be unique</span>
+              </div>
+              <div class="form-group">
+                <label>Password <span style="color:var(--danger)">*</span></label>
+                <input type="password" name="password" placeholder="Min 6 characters" minlength="6" required>
+                <span class="field-hint">Will be hashed automatically</span>
+              </div>
+            </div>
+            {% else %}
+            <div class="form-section-label">Login Account</div>
+            <div class="info-box" style="background:rgba(200,240,96,0.06);border-color:rgba(200,240,96,0.2);color:var(--accent);">
+              Username: <strong>@{{ employee.username }}</strong> — to change the password, delete and re-add the employee.
+            </div>
+            {% endif %}
+
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              {{ 'Save Changes' if action=='edit' else 'Add Employee' }}
+            </button>
+            <a href="{{ url_for('employees') }}" class="btn btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
