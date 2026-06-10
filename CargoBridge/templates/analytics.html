@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics — CargoBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    /* ── Page header ── */
+    .analytics-hero {
+      background: linear-gradient(135deg, var(--sidebar-bg) 0%, #1e3a5f 100%);
+      border-radius: var(--radius-lg);
+      padding: 2rem 2.2rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      box-shadow: var(--shadow-md);
+    }
+    .analytics-hero-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.02em;
+    }
+    .analytics-hero-title span { color: #60a5fa; }
+    .analytics-hero-sub {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    .hero-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .hero-chip {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: rgba(96,165,250,0.12);
+      border: 1px solid rgba(96,165,250,0.25);
+      color: #93c5fd;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Section headings ── */
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1.2rem;
+      margin-top: 0.5rem;
+    }
+    .section-heading-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .section-heading-text h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: 0.02em;
+    }
+    .section-heading-text p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    /* ── Analytics card ── */
+    .an-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-lg);
+      padding: 1.4rem;
+      box-shadow: var(--shadow-sm);
+      height: 100%;
+    }
+    .an-card-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .an-tag {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--accent-light);
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Bar rows ── */
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid var(--border-dim);
+    }
+    .bar-row:last-child { border-bottom: none; }
+    .bar-label {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      min-width: 110px;
+      text-transform: capitalize;
+    }
+    .bar-track {
+      flex: 1;
+      height: 10px;
+      background: var(--bg-raised);
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid var(--border-dim);
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 5px;
+      transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+    }
+    .bar-val {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      min-width: 80px;
+      text-align: right;
+    }
+    .bar-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Donut chart (CSS only) ── */
+    .donut-wrap {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .donut-legend { flex: 1; }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid var(--border-dim);
+    }
+    .legend-item:last-child { border-bottom: none; }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .legend-label { font-size: 0.82rem; font-weight: 500; color: var(--text-primary); flex: 1; text-transform: capitalize; }
+    .legend-count { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
+    .legend-pct   { font-size: 0.72rem; color: var(--text-muted); min-width: 36px; text-align: right; }
+
+    /* ── KPI tiles ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .kpi-tile {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-lg);
+      padding: 1.2rem 1.4rem;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    .kpi-tile:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .kpi-tile::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+    .kpi-tile.blue::before  { background: #3b82f6; }
+    .kpi-tile.green::before { background: #10b981; }
+    .kpi-tile.amber::before { background: #f59e0b; }
+    .kpi-tile.purple::before{ background: #8b5cf6; }
+    .kpi-tile.cyan::before  { background: #06b6d4; }
+    .kpi-tile.rose::before  { background: #f43f5e; }
+    .kpi-icon {
+      width: 38px; height: 38px;
+      border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 0.8rem;
+      font-size: 1rem;
+    }
+    .kpi-icon.blue   { background: #eff6ff; color: #3b82f6; }
+    .kpi-icon.green  { background: #ecfdf5; color: #10b981; }
+    .kpi-icon.amber  { background: #fffbeb; color: #f59e0b; }
+    .kpi-icon.purple { background: #f5f3ff; color: #8b5cf6; }
+    .kpi-icon.cyan   { background: #ecfeff; color: #06b6d4; }
+    .kpi-icon.rose   { background: #fff1f2; color: #f43f5e; }
+    .kpi-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+    .kpi-value { font-size: 1.8rem; font-weight: 700; color: var(--text-primary); line-height: 1; }
+    .kpi-sub   { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Grid layouts ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; margin-bottom: 1.4rem; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.4rem; margin-bottom: 1.4rem; }
+
+    .empty-note { font-size: 0.8rem; color: var(--text-muted); padding: 0.8rem 0; text-align: center; }
+
+    @media (max-width: 1000px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .kpi-grid { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+
+  {% from 'base_sidebar.html' import sidebar %}{{ sidebar('analytics') }}
+
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <span class="topbar-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="vertical-align:-2px;margin-right:8px;color:var(--accent)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Analytics
+      </span>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Hero banner -->
+      <div class="analytics-hero">
+        <div>
+          <div class="analytics-hero-title">Aggregation <span>Pipeline</span> Results</div>
+          <div class="analytics-hero-sub">Live data computed by MongoDB aggregation pipelines — updated on every page load</div>
+        </div>
+        <div class="hero-chips">
+          <span class="hero-chip">$group</span>
+          <span class="hero-chip">$match</span>
+          <span class="hero-chip">$unwind</span>
+          <span class="hero-chip">$sort</span>
+          <span class="hero-chip">$dateToString</span>
+          <span class="hero-chip">$avg</span>
+        </div>
+      </div>
+
+      <!-- ── KPI tiles ── -->
+      {% set total_shp = data.shipment_by_status | sum(attribute='count') %}
+      {% set total_rev = data.revenue_by_currency | sum(attribute='total') %}
+      {% set total_txn = data.txn_summary | sum(attribute='total') %}
+      {% set top_prod  = data.top_products[0]._id if data.top_products else '—' %}
+      {% set top_prod_qty = data.top_products[0].total_qty if data.top_products else 0 %}
+      {% set months_active = data.monthly_shipments | length %}
+
+      <div class="kpi-grid">
+        <div class="kpi-tile blue">
+          <div class="kpi-icon blue">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/></svg>
+          </div>
+          <div class="kpi-label">Total Shipments</div>
+          <div class="kpi-value">{{ total_shp }}</div>
+          <div class="kpi-sub">across all statuses</div>
+        </div>
+        <div class="kpi-tile green">
+          <div class="kpi-icon green">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div class="kpi-label">Total Revenue</div>
+          <div class="kpi-value">${{ "%.0f"|format(total_rev) }}</div>
+          <div class="kpi-sub">completed + confirmed orders</div>
+        </div>
+        <div class="kpi-tile amber">
+          <div class="kpi-icon amber">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+          <div class="kpi-label">Top Product</div>
+          <div class="kpi-value" style="font-size:1.2rem;">{{ top_prod }}</div>
+          <div class="kpi-sub">{{ top_prod_qty }} units ordered</div>
+        </div>
+        <div class="kpi-tile purple">
+          <div class="kpi-icon purple">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <div class="kpi-label">Transactions Value</div>
+          <div class="kpi-value">${{ "%.0f"|format(total_txn) }}</div>
+          <div class="kpi-sub">all transaction types</div>
+        </div>
+        <div class="kpi-tile cyan">
+          <div class="kpi-icon cyan">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div class="kpi-label">Active Months</div>
+          <div class="kpi-value">{{ months_active }}</div>
+          <div class="kpi-sub">months with shipments</div>
+        </div>
+        {% if session.role == 'admin' %}
+        <div class="kpi-tile rose">
+          <div class="kpi-icon rose">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          </div>
+          <div class="kpi-label">Departments</div>
+          <div class="kpi-value">{{ data.dept_summary | length }}</div>
+          <div class="kpi-sub">with active employees</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- ── Row 1: Shipment Status + Revenue by Currency ── -->
+      <div class="grid-2">
+
+        <!-- Pipeline 1: Shipment Status -->
+        <div class="an-card">
+          <div class="an-card-title">
+            Shipment Status Breakdown
+            <span class="an-tag">$group · $sort</span>
+          </div>
+          <div class="section-heading" style="margin-bottom:1rem;margin-top:0;">
+            <div class="section-heading-icon" style="background:#eff6ff;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/></svg>
+            </div>
+            <div class="section-heading-text">
+              <h3>Shipments by Status</h3>
+              <p>Grouped count from shipments collection</p>
+            </div>
+          </div>
+          {% if data.shipment_by_status %}
+            {% set max_s = data.shipment_by_status[0].count %}
+            {% set colors = {'in-transit':'#06b6d4','delivered':'#10b981','pending':'#f59e0b','cancelled':'#ef4444'} %}
+            {% for row in data.shipment_by_status %}
+            {% set clr = colors.get(row._id, '#3b82f6') %}
+            <div class="bar-row">
+              <span class="bar-label">{{ row._id or 'unknown' }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" style="width:{{ (row.count / max_s * 100)|int }}%;background:{{ clr }}"></div>
+              </div>
+              <span class="bar-val">{{ row.count }}</span>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty-note">No shipments yet</div>
+          {% endif %}
+        </div>
+
+        <!-- Pipeline 2: Revenue by Currency -->
+        <div class="an-card">
+          <div class="an-card-title">
+            Revenue by Currency
+            <span class="an-tag">$match · $group</span>
+          </div>
+          <div class="section-heading" style="margin-bottom:1rem;margin-top:0;">
+            <div class="section-heading-icon" style="background:#ecfdf5;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="section-heading-text">
+              <h3>Order Revenue</h3>
+              <p>Completed &amp; confirmed orders only</p>
+            </div>
+          </div>
+          {% if data.revenue_by_currency %}
+            {% set max_r = data.revenue_by_currency[0].total %}
+            {% set cur_colors = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#06b6d4'] %}
+            {% for row in data.revenue_by_currency %}
+            <div class="bar-row">
+              <span class="bar-label">{{ row._id }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" style="width:{{ (row.total / max_r * 100)|int if max_r else 0 }}%;background:{{ cur_colors[loop.index0 % 5] }}"></div>
+              </div>
+              <span class="bar-val">${{ "%.0f"|format(row.total) }} <span class="bar-sub">({{ row.count }})</span></span>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty-note">No completed orders yet</div>
+          {% endif %}
+        </div>
+
+      </div>
+
+      <!-- ── Row 2: Top Products + Transaction Summary ── -->
+      <div class="grid-2">
+
+        <!-- Pipeline 3: Top Products -->
+        <div class="an-card">
+          <div class="an-card-title">
+            Top 5 Products by Order Volume
+            <span class="an-tag">$unwind · $group</span>
+          </div>
+          <div class="section-heading" style="margin-bottom:1rem;margin-top:0;">
+            <div class="section-heading-icon" style="background:#f5f3ff;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            </div>
+            <div class="section-heading-text">
+              <h3>Most Ordered Products</h3>
+              <p>Unwound from embedded items array</p>
+            </div>
+          </div>
+          {% if data.top_products %}
+            {% set max_q = data.top_products[0].total_qty %}
+            {% for row in data.top_products %}
+            <div class="bar-row">
+              <span class="bar-label">{{ row._id }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" style="width:{{ (row.total_qty / max_q * 100)|int if max_q else 0 }}%;background:#8b5cf6"></div>
+              </div>
+              <span class="bar-val">{{ row.total_qty }} <span class="bar-sub">units</span></span>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty-note">No orders with items yet</div>
+          {% endif %}
+        </div>
+
+        <!-- Pipeline 4: Transaction Summary -->
+        <div class="an-card">
+          <div class="an-card-title">
+            Transaction Summary
+            <span class="an-tag">$group · $sort</span>
+          </div>
+          <div class="section-heading" style="margin-bottom:1rem;margin-top:0;">
+            <div class="section-heading-icon" style="background:#fffbeb;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            </div>
+            <div class="section-heading-text">
+              <h3>By Status &amp; Type</h3>
+              <p>Total amounts per status and payment type</p>
+            </div>
+          </div>
+          {% if data.txn_summary %}
+            {% set max_t = data.txn_summary[0].total %}
+            {% for row in data.txn_summary %}
+            <div class="bar-row">
+              <span class="bar-label">{{ row._id.status }} · {{ row._id.type }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" style="width:{{ (row.total / max_t * 100)|int if max_t else 0 }}%;background:#f59e0b"></div>
+              </div>
+              <span class="bar-val">${{ "%.0f"|format(row.total) }} <span class="bar-sub">({{ row.count }})</span></span>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty-note">No transactions yet</div>
+          {% endif %}
+        </div>
+
+      </div>
+
+      <!-- ── Row 3: Monthly Shipments (full width) ── -->
+      <div style="margin-bottom:1.4rem;">
+        <div class="an-card">
+          <div class="an-card-title">
+            Monthly Shipment Activity
+            <span class="an-tag">$dateToString · $group</span>
+          </div>
+          <div class="section-heading" style="margin-bottom:1.2rem;margin-top:0;">
+            <div class="section-heading-icon" style="background:#ecfeff;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div class="section-heading-text">
+              <h3>Shipments per Month</h3>
+              <p>Extracted using $dateToString — last 12 months</p>
+            </div>
+          </div>
+          {% if data.monthly_shipments %}
+            {% set max_m = data.monthly_shipments | map(attribute='count') | max %}
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.8rem;">
+              {% for row in data.monthly_shipments %}
+              <div style="background:var(--bg-raised);border:1px solid var(--border-dim);border-radius:var(--radius-md);padding:0.9rem 1rem;">
+                <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">{{ row._id }}</div>
+                <div style="font-size:1.4rem;font-weight:700;color:var(--text-primary);line-height:1;">{{ row.count }}</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);margin-top:3px;">{{ row.total_weight|int }} kg total weight</div>
+                <div style="margin-top:8px;height:4px;background:var(--border-dim);border-radius:2px;">
+                  <div style="height:100%;border-radius:2px;background:#06b6d4;width:{{ (row.count / max_m * 100)|int if max_m else 0 }}%;transition:width 0.8s ease;"></div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty-note">No shipments with dates yet</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- ── Row 4: Employee Dept Summary (admin only) ── -->
+      {% if session.role == 'admin' %}
+      <div style="margin-bottom:1.4rem;">
+        <div class="an-card">
+          <div class="an-card-title">
+            Employee Department Summary
+            <span class="an-tag">$group · $avg · $sum</span>
+          </div>
+          <div class="section-heading" style="margin-bottom:1.2rem;margin-top:0;">
+            <div class="section-heading-icon" style="background:#fff1f2;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+            <div class="section-heading-text">
+              <h3>Staff by Department</h3>
+              <p>Headcount and average salary — admin view only</p>
+            </div>
+          </div>
+          {% if data.dept_summary %}
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.86rem;">
+              <thead>
+                <tr style="background:var(--bg-raised);border-bottom:1.5px solid var(--border-mid);">
+                  <th style="text-align:left;padding:0.7rem 1rem;font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);">Department</th>
+                  <th style="text-align:center;padding:0.7rem 1rem;font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);">Headcount</th>
+                  <th style="text-align:right;padding:0.7rem 1rem;font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);">Avg Salary (PKR)</th>
+                  <th style="text-align:right;padding:0.7rem 1rem;font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);">Total Payroll (PKR)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in data.dept_summary %}
+                <tr style="border-bottom:1px solid var(--border-dim);">
+                  <td style="padding:0.75rem 1rem;font-weight:600;color:var(--text-primary);">{{ row._id }}</td>
+                  <td style="padding:0.75rem 1rem;text-align:center;">
+                    <span style="background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;border-radius:20px;padding:2px 12px;font-size:0.78rem;font-weight:600;">{{ row.headcount }}</span>
+                  </td>
+                  <td style="padding:0.75rem 1rem;text-align:right;font-family:var(--font-mono);font-size:0.82rem;color:var(--text-primary);">{{ "{:,.0f}".format(row.avg_salary or 0) }}</td>
+                  <td style="padding:0.75rem 1rem;text-align:right;font-family:var(--font-mono);font-size:0.82rem;font-weight:600;color:#10b981;">{{ "{:,.0f}".format(row.total_salary or 0) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <div class="empty-note">No employees yet</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div>
+
+</body>
+</html>
